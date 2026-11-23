@@ -9,6 +9,7 @@ import RepliesTracker from './components/RepliesTracker';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import SettingsModal from './components/SettingsModal';
 import AccountWizardModal from './components/AccountWizardModal';
+import AccountRiskAudit from './components/AccountRiskAudit';
 
 import { 
   initialTaggedTweets, 
@@ -165,6 +166,12 @@ export default function App() {
               selectedHotspot={selectedHotspot}
               onPublishTweet={handlePublishTweet}
               account={account}
+            />
+          )}
+
+          {currentTab === 'risk' && (
+            <AccountRiskAudit 
+              currentAccount={account}
             />
           )}
 

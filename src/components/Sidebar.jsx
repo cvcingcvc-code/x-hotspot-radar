@@ -28,7 +28,8 @@ export default function Sidebar({
 
   const navItems = [
     { id: 'radar', name: '智能热点雷达', icon: Flame, badge: '实时热度' },
-    { id: 'studio', name: '文案工坊 / 拟稿', icon: PenTool, badge: 'AI裂变' },
+    { id: 'studio', name: '文案工坊 / 拟稿', icon: PenTool, badge: '流量诊断' },
+    { id: 'risk', name: '账号风控体检', icon: ShieldCheck, badge: '防限流' },
     { id: 'tagging', name: '推文智能打标', icon: Tags, badge: null },
     { id: 'replies', name: '谁回复了我', icon: MessageSquareHeart, badge: unreadRepliesCount > 0 ? `${unreadRepliesCount}条新互动` : null },
     { id: 'analytics', name: '账号数据看板', icon: BarChart3, badge: null },

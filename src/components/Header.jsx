@@ -14,6 +14,8 @@ export default function Header({
         return { title: '智能热点雷达', sub: '实时全网捕获，智能匹配 AI 科技与独立开发赛道爆款契机' };
       case 'studio':
         return { title: '文案工坊 & 发推', sub: '将热点一键转化为符合个人口吻的高赞 X 推文并直发' };
+      case 'risk':
+        return { title: 'X 账号风控与限流体检中心', sub: '人人可用：深度检测搜索可见度、回复幽灵化与 X 官方算法推荐准则' };
       case 'tagging':
         return { title: '推文智能打标与内容看板', sub: '历史推文自动标签化分类，透视最具吸引力的爆款话题' };
       case 'replies':

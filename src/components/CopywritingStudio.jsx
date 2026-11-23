@@ -10,8 +10,13 @@ import {
   Hash, 
   Image as ImageIcon,
   Wand2,
-  AlertCircle
+  AlertCircle,
+  TrendingUp,
+  Zap,
+  ShieldAlert,
+  Flame
 } from 'lucide-react';
+import { analyzeTweetVirality } from '../utils/xAlgorithmEngine';
 
 export default function CopywritingStudio({ 
   selectedHotspot, 
@@ -129,6 +134,25 @@ export default function CopywritingStudio({
   };
 
   const charCount = tweetContent.length;
+  const viralAnalysis = analyzeTweetVirality(tweetContent);
+
+  const handleBoostViral = () => {
+    let newContent = tweetContent;
+    // 1. 如果有外链，自动移除并移入首评
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const urls = newContent.match(urlRegex);
+    if (urls && urls.length > 0) {
+      newContent = newContent.replace(urlRegex, '').trim();
+      setSelfReplyComment(prev => `${prev ? prev + '\n\n' : ''}🔗 完整资源与链接在首评领取：${urls.join(' ')}`);
+    }
+    // 2. 如果缺少结尾递话筒问题
+    if (!viralAnalysis.hasQuestion) {
+      newContent += '\n\n你觉得这个方向可行吗？评论区聊聊你的想法👇';
+    }
+    // 3. 增强留白与分段
+    newContent = newContent.replace(/\n{3,}/g, '\n\n');
+    setTweetContent(newContent);
+  };
 
   return (
     <div className="space-y-6">
@@ -191,16 +215,27 @@ export default function CopywritingStudio({
             {/* AI 润色快捷按键 */}
             <div className="flex items-center space-x-2">
               <button
+                type="button"
+                onClick={handleBoostViral}
+                className="text-[11px] px-3 py-1.5 rounded-xl scarf-gradient text-white shadow-frost-glow transition font-bold flex items-center gap-1 hover:opacity-95 transform active:scale-95"
+                title="根据 X 算法规则优化：移外链至评论区、增添递话筒结尾与排版留白"
+              >
+                <Zap className="w-3.5 h-3.5 text-amber-200 fill-amber-200" />
+                一键算法提权
+              </button>
+              <button
+                type="button"
                 onClick={() => handlePolish('hook')}
-                className="text-[11px] px-2.5 py-1 rounded-xl bg-white/70 hover:bg-white text-frost-700 border border-frost-200 transition font-medium flex items-center gap-1"
+                className="text-[11px] px-2.5 py-1.5 rounded-xl bg-white/70 hover:bg-white text-frost-700 border border-frost-200 transition font-medium flex items-center gap-1"
                 title="添加引人注目的开头"
               >
                 <Wand2 className="w-3 h-3 text-scarf-500" />
                 强钩子开头
               </button>
               <button
+                type="button"
                 onClick={() => handlePolish('snow')}
-                className="text-[11px] px-2.5 py-1 rounded-xl bg-white/70 hover:bg-white text-frost-700 border border-frost-200 transition font-medium"
+                className="text-[11px] px-2.5 py-1.5 rounded-xl bg-white/70 hover:bg-white text-frost-700 border border-frost-200 transition font-medium"
                 title="融入冬日雪景意境"
               >
                 ❄️ 冬雪意境
@@ -330,6 +365,54 @@ export default function CopywritingStudio({
                 <span>📊 0</span>
               </div>
             </div>
+          </div>
+
+          {/* X 推荐算法流量潜力实时诊断仪 */}
+          <div className="glass-panel rounded-3xl p-5 border border-white space-y-3">
+            <div className="flex items-center justify-between text-xs pb-2 border-b border-frost-100">
+              <span className="font-bold text-frost-800 flex items-center gap-1.5">
+                <Flame className="w-3.5 h-3.5 text-scarf-500 fill-scarf-500" />
+                推文流量与算法诊断
+              </span>
+              <span className={`text-[11px] font-extrabold ${viralAnalysis.color}`}>
+                {viralAnalysis.score} 分 · {viralAnalysis.level}
+              </span>
+            </div>
+
+            {/* 检测维度状态 */}
+            <div className="space-y-1.5 text-xs">
+              <div className="flex items-center justify-between bg-white/60 px-3 py-1.5 rounded-xl border border-frost-100">
+                <span className="text-frost-600">首行视觉钩子:</span>
+                <span className={`font-semibold ${viralAnalysis.hasHook ? 'text-emerald-600' : 'text-amber-600'}`}>
+                  {viralAnalysis.hasHook ? '✓ 具备' : '⚠ 较平淡'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between bg-white/60 px-3 py-1.5 rounded-xl border border-frost-100">
+                <span className="text-frost-600">结尾递话筒 (诱发回复):</span>
+                <span className={`font-semibold ${viralAnalysis.hasQuestion ? 'text-emerald-600' : 'text-amber-600'}`}>
+                  {viralAnalysis.hasQuestion ? '✓ 具备' : '⚠ 缺失问句'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between bg-white/60 px-3 py-1.5 rounded-xl border border-frost-100">
+                <span className="text-frost-600">主帖外链降权检查:</span>
+                <span className={`font-semibold ${viralAnalysis.hasExternalLink ? 'text-rose-600 font-bold' : 'text-emerald-600'}`}>
+                  {viralAnalysis.hasExternalLink ? '❌ 存在外链(-40%)' : '✓ 安全无外链'}
+                </span>
+              </div>
+            </div>
+
+            {/* 优化建议 */}
+            {viralAnalysis.suggestions.length > 0 && (
+              <div className="bg-scarf-50/60 p-3 rounded-2xl border border-scarf-200/60 space-y-1 text-[11px] text-scarf-900">
+                <p className="font-bold flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-scarf-600" />
+                  算法提升建议：
+                </p>
+                <p className="leading-relaxed text-frost-600">
+                  {viralAnalysis.suggestions[0]}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* 智能配图建议 */}
