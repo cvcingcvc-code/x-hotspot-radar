@@ -16,11 +16,16 @@ export default function Sidebar({
   currentTab, 
   setCurrentTab, 
   account, 
+  allAccounts = [],
+  onSwitchAccount,
+  onOpenWizard,
   snowEnabled, 
   setSnowEnabled,
   unreadRepliesCount = 4,
   onOpenSettings
 }) {
+  const [showAccountDropdown, setShowAccountDropdown] = React.useState(false);
+
   const navItems = [
     { id: 'radar', name: '智能热点雷达', icon: Flame, badge: '实时热度' },
     { id: 'studio', name: '文案工坊 / 拟稿', icon: PenTool, badge: 'AI裂变' },
@@ -53,63 +58,95 @@ export default function Sidebar({
             </div>
           </div>
 
-          {/* 角色与账号卡片 (真实账号小北 @kiYuanly) */}
-          <div className="relative group overflow-hidden rounded-2xl border border-white/70 bg-white/40 p-3.5 backdrop-blur-md shadow-sm transition hover:bg-white/70">
-            <div className="flex items-center space-x-3">
-              <a 
-                href={account.url || "https://x.com/kiYuanly"} 
-                target="_blank" 
-                rel="noreferrer"
-                className="relative block group-hover:scale-105 transition"
-                title="点击访问 X 主页"
+          {/* 账号选择与多用户切换器 */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs px-1">
+              <span className="text-frost-400 font-semibold text-[11px] uppercase tracking-wider">当前内容工作台</span>
+              <button
+                onClick={onOpenWizard}
+                className="text-[11px] font-bold text-scarf-600 hover:text-scarf-700 transition flex items-center gap-1 hover:underline"
+                title="接入属于你自己的 X 账号"
               >
-                <img 
-                  src={account.avatar} 
-                  alt="Avatar" 
-                  className="w-12 h-12 rounded-xl object-cover ring-2 ring-white shadow-sm"
-                />
-                <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full ring-1 ring-white" title="真实账号已连通" />
-              </a>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold text-frost-900 truncate">{account.name}</p>
-                  <a 
-                    href={account.url || "https://x.com/kiYuanly"} 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="text-frost-400 hover:text-scarf-600 transition"
-                    title="在 X 中打开"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                </div>
-                <p className="text-xs text-frost-400 truncate">{account.handle}</p>
-                <div className="flex items-center gap-1 mt-1 text-[11px] text-emerald-600 font-medium">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>真实账号直连</span>
+                + 接入新账号
+              </button>
+            </div>
+
+            {/* 账号卡片主体 */}
+            <div className="relative group rounded-2xl border border-white/70 bg-white/40 p-3.5 backdrop-blur-md shadow-sm transition hover:bg-white/70">
+              <div className="flex items-center space-x-3">
+                <a 
+                  href={account.url || `https://x.com/${account.handle.replace('@', '')}`} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="relative block group-hover:scale-105 transition"
+                  title="点击在新窗口打开 X 主页"
+                >
+                  <img 
+                    src={account.avatar} 
+                    alt="Avatar" 
+                    className="w-12 h-12 rounded-xl object-cover ring-2 ring-white shadow-sm"
+                  />
+                  <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full ring-1 ring-white" title="在线" />
+                </a>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold text-frost-900 truncate">{account.name}</p>
+                    {allAccounts.length > 1 && (
+                      <button
+                        onClick={() => setShowAccountDropdown(!showAccountDropdown)}
+                        className="text-[10px] px-1.5 py-0.5 rounded bg-frost-200/70 hover:bg-frost-200 text-frost-600 font-medium transition"
+                        title="切换账号"
+                      >
+                        切换
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-xs text-frost-400 truncate">{account.handle}</p>
+                  <div className="flex items-center gap-1 mt-1 text-[11px] text-emerald-600 font-medium">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>独立内容台已就绪</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* 真实数据小统计 */}
-            <div className="mt-2.5 pt-2 border-t border-frost-100 flex items-center justify-between text-[11px] text-frost-500">
-              <span>粉丝 <strong>{account.followersCount}</strong></span>
-              <span>·</span>
-              <span>关注 <strong>{account.followingCount}</strong></span>
-              <span>·</span>
-              <span className="text-scarf-600 font-semibold">{account.location || '香港'}</span>
-            </div>
+              {/* 多账号下拉切换列表 */}
+              {showAccountDropdown && (
+                <div className="mt-3 pt-2.5 border-t border-frost-200/80 space-y-1">
+                  <p className="text-[10px] text-frost-400 font-semibold px-1">点击切换工作台：</p>
+                  {allAccounts.map(acc => (
+                    <button
+                      key={acc.id}
+                      onClick={() => {
+                        onSwitchAccount(acc.id);
+                        setShowAccountDropdown(false);
+                      }}
+                      className={`w-full text-left p-2 rounded-xl text-xs flex items-center justify-between transition ${
+                        acc.id === account.id 
+                          ? 'bg-scarf-100 text-scarf-800 font-bold' 
+                          : 'hover:bg-white/70 text-frost-700'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2 truncate">
+                        <img src={acc.avatar} className="w-6 h-6 rounded-lg object-cover" />
+                        <span className="truncate">{acc.name} ({acc.handle})</span>
+                      </div>
+                      {acc.id === account.id && <span className="text-[10px]">当前</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
 
-            {/* 定位标签展示 */}
-            <div className="mt-2 pt-2 border-t border-frost-100/60 flex flex-wrap gap-1">
-              {account.targetNiche.map((tag, idx) => (
-                <span 
-                  key={idx} 
-                  className="text-[10px] px-1.5 py-0.5 rounded-md bg-frost-100/90 text-frost-600 font-medium border border-frost-200/50"
-                >
-                  {tag}
-                </span>
-              ))}
+              {/* 定位标签展示 */}
+              <div className="mt-2.5 pt-2 border-t border-frost-100/60 flex flex-wrap gap-1">
+                {account.targetNiche.map((tag, idx) => (
+                  <span 
+                    key={idx} 
+                    className="text-[10px] px-1.5 py-0.5 rounded-md bg-frost-100/90 text-frost-600 font-medium border border-frost-200/50"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
 

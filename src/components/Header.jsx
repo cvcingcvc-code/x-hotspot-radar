@@ -5,7 +5,8 @@ export default function Header({
   currentTab, 
   account, 
   onQuickPost, 
-  onOpenSettings 
+  onOpenSettings,
+  onOpenWizard
 }) {
   const getTabTitle = () => {
     switch (currentTab) {
@@ -40,10 +41,20 @@ export default function Header({
       </div>
 
       <div className="flex items-center space-x-3">
+        {/* 接入我自己的 X 账号按钮 */}
+        <button
+          onClick={onOpenWizard}
+          className="flex items-center space-x-1.5 px-3 py-1.5 rounded-2xl bg-white/80 hover:bg-white text-xs font-semibold text-scarf-700 border border-scarf-200 shadow-sm transition hover:shadow-frost-glow"
+          title="输入你的 X 账号与定位，自动生成专属热点与文案台"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-scarf-500" />
+          <span>接入我的 X 账号</span>
+        </button>
+
         {/* X 账号状态胶囊 */}
         <div className="flex items-center space-x-1">
           <a
-            href={account.url || "https://x.com/kiYuanly"}
+            href={account.url || `https://x.com/${account.handle.replace('@', '')}`}
             target="_blank"
             rel="noreferrer"
             className="flex items-center space-x-2 px-3 py-1.5 rounded-2xl glass-card text-xs font-medium text-frost-700 hover:border-scarf-300 transition"
@@ -51,7 +62,7 @@ export default function Header({
           >
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="font-semibold text-frost-800">{account.handle}</span>
-            <span className="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded font-semibold">真实已连</span>
+            <span className="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded font-semibold">当前台</span>
           </a>
         </div>
 
