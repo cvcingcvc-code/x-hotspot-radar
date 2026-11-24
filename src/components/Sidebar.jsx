@@ -78,7 +78,7 @@ export default function Sidebar({
                 <a 
                   href={account.url || `https://x.com/${account.handle.replace('@', '')}`} 
                   target="_blank" 
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   className="relative block group-hover:scale-105 transition"
                   title="点击在新窗口打开 X 主页"
                 >

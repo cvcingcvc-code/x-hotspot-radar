@@ -15,20 +15,23 @@ import {
   Lock
 } from 'lucide-react';
 import { auditAccountRisk, X_ALGORITHM_RULES } from '../utils/xAlgorithmEngine';
+import { sanitizeHandle } from '../utils/accountEngine';
 
 export default function AccountRiskAudit({ currentAccount }) {
-  const [handleInput, setHandleInput] = useState(currentAccount.handle || '@kiYuanly');
+  const [handleInput, setHandleInput] = useState(currentAccount?.handle || '@kiYuanly');
   const [isScanning, setIsScanning] = useState(false);
-  const [auditReport, setAuditReport] = useState(() => auditAccountRisk(currentAccount.handle, currentAccount));
+  const [auditReport, setAuditReport] = useState(() => auditAccountRisk(currentAccount?.handle, currentAccount));
 
   const handleStartScan = (e) => {
     e.preventDefault();
     if (!handleInput.trim()) return;
+    const clean = sanitizeHandle(handleInput);
+    setHandleInput(clean);
     setIsScanning(true);
 
     setTimeout(() => {
       setIsScanning(false);
-      setAuditReport(auditAccountRisk(handleInput, currentAccount));
+      setAuditReport(auditAccountRisk(clean, currentAccount));
     }, 900);
   };
 
@@ -56,6 +59,7 @@ export default function AccountRiskAudit({ currentAccount }) {
               <Search className="w-3.5 h-3.5 text-frost-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
+                maxLength={30}
                 value={handleInput}
                 onChange={(e) => setHandleInput(e.target.value)}
                 placeholder="@any_x_handle"

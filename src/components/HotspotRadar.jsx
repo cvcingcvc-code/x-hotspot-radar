@@ -93,6 +93,7 @@ export default function HotspotRadar({ hotspots, onSelectHotspotForStudio }) {
             <Search className="w-3.5 h-3.5 text-frost-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
+              maxLength={50}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="搜索热点关键词..."

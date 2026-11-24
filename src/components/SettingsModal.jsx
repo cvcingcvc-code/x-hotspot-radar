@@ -10,6 +10,7 @@ import {
   ToggleLeft,
   ToggleRight
 } from 'lucide-react';
+import { sanitizeHandle, sanitizeAccount } from '../utils/accountEngine';
 
 export default function SettingsModal({ 
   isOpen, 
@@ -19,27 +20,34 @@ export default function SettingsModal({
 }) {
   if (!isOpen) return null;
 
-  const [authType, setAuthType] = useState(account.authType || 'mock');
-  const [apiKey, setApiKey] = useState(account.apiKey || '');
-  const [apiSecret, setApiSecret] = useState(account.apiSecret || '');
-  const [bearerToken, setBearerToken] = useState(account.bearerToken || '');
-  const [handle, setHandle] = useState(account.handle || '@winter_dev_ai');
-  const [name, setName] = useState(account.name || 'WinterDev ❄️');
-  const [niches, setNiches] = useState(account.targetNiche.join(', '));
+  const [authType, setAuthType] = useState(account?.authType || 'mock');
+  const [apiKey, setApiKey] = useState(account?.apiKey || '');
+  const [apiSecret, setApiSecret] = useState(account?.apiSecret || '');
+  const [bearerToken, setBearerToken] = useState(account?.bearerToken || '');
+  const [handle, setHandle] = useState(account?.handle || '@winter_dev_ai');
+  const [name, setName] = useState(account?.name || 'WinterDev ❄️');
+  const [niches, setNiches] = useState((account?.targetNiche || []).join(', '));
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const handleSave = (e) => {
     e.preventDefault();
-    onUpdateAccount({
+    const cleanNiches = niches
+      .split(/[,，]/)
+      .map(s => s.trim().slice(0, 30))
+      .filter(Boolean);
+
+    const updated = sanitizeAccount({
       ...account,
       authType,
-      apiKey,
-      apiSecret,
-      bearerToken,
-      handle,
-      name,
-      targetNiche: niches.split(/[,，]/).map(s => s.trim()).filter(Boolean)
+      apiKey: apiKey.trim().slice(0, 128),
+      apiSecret: apiSecret.trim().slice(0, 128),
+      bearerToken: bearerToken.trim().slice(0, 256),
+      handle: sanitizeHandle(handle),
+      name: name.trim().slice(0, 40),
+      targetNiche: cleanNiches.length > 0 ? cleanNiches : ['AI 科技', '一人创业']
     });
+
+    onUpdateAccount(updated);
     setSaveSuccess(true);
     setTimeout(() => {
       setSaveSuccess(false);
@@ -102,6 +110,7 @@ export default function SettingsModal({
               <label className="block text-frost-700 font-semibold mb-1">X 用户名 (Handle)</label>
               <input
                 type="text"
+                maxLength={40}
                 value={handle}
                 onChange={(e) => setHandle(e.target.value)}
                 placeholder="@your_x_handle"
@@ -112,6 +121,7 @@ export default function SettingsModal({
               <label className="block text-frost-700 font-semibold mb-1">展示昵称</label>
               <input
                 type="text"
+                maxLength={30}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="你的昵称"
@@ -127,6 +137,7 @@ export default function SettingsModal({
             </label>
             <input
               type="text"
+              maxLength={100}
               value={niches}
               onChange={(e) => setNiches(e.target.value)}
               placeholder="AI 科技, 独立开发, 前沿工具"

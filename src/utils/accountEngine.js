@@ -1,4 +1,4 @@
-// 创作者账号与动态内容生成引擎
+// 创作者账号与动态内容生成引擎 (带严格安全审计与数据清洗加固)
 
 export const DEFAULT_PRESET_ACCOUNTS = [
   {
@@ -39,10 +39,88 @@ export const DEFAULT_PRESET_ACCOUNTS = [
   }
 ];
 
+// 安全清洗与格式化 Handle (仅允许字母、数字与下划线，最长 15 位，防止协议注入与异常字符)
+export function sanitizeHandle(rawHandle = "") {
+  if (typeof rawHandle !== "string") return "@creator";
+  let cleaned = rawHandle.trim();
+  if (cleaned.includes("x.com/")) {
+    cleaned = cleaned.split("x.com/")[1] || "";
+  } else if (cleaned.includes("twitter.com/")) {
+    cleaned = cleaned.split("twitter.com/")[1] || "";
+  }
+  cleaned = cleaned.split("/")[0].split("?")[0].replace(/^@+/, "");
+  // 严格过滤仅保留合法 X 用户名字符
+  cleaned = cleaned.replace(/[^a-zA-Z0-9_]/g, "").slice(0, 15);
+  return cleaned ? `@${cleaned}` : "@creator";
+}
+
+// 安全清洗 URL (严格只允许安全的 https/http 或本地资源路径，杜绝 javascript: 伪协议)
+export function sanitizeSafeUrl(rawUrl = "", fallback = "https://x.com") {
+  if (typeof rawUrl !== "string") return fallback;
+  const trimmed = rawUrl.trim();
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("/assets/")) {
+    return trimmed;
+  }
+  return fallback;
+}
+
+// 针对本地存储或外部输入的账号数据进行严格 Schema 校验与防御性清洗 (防止白屏崩溃与注入)
+export function sanitizeAccount(rawAcc) {
+  if (!rawAcc || typeof rawAcc !== "object") {
+    return DEFAULT_PRESET_ACCOUNTS[0];
+  }
+
+  const cleanHandle = sanitizeHandle(rawAcc.handle || "@creator");
+  const pureHandle = cleanHandle.replace(/^@/, "");
+  const defaultUrl = pureHandle ? `https://x.com/${pureHandle}` : "https://x.com";
+
+  // 严格保证 targetNiche 为有效的字符串数组
+  let niches = Array.isArray(rawAcc.targetNiche) ? rawAcc.targetNiche : [];
+  niches = niches
+    .filter(n => typeof n === "string" && n.trim().length > 0)
+    .map(n => n.trim().slice(0, 30))
+    .slice(0, 10);
+  if (niches.length === 0) {
+    niches = ["AI 与一人创业", "独立出海"];
+  }
+
+  // 校验头像路径
+  let avatar = sanitizeSafeUrl(rawAcc.avatar, "/assets/winter-anime-hero.jpg");
+  if (!avatar.startsWith("https://") && !avatar.startsWith("http://") && !avatar.startsWith("/assets/")) {
+    avatar = "/assets/winter-anime-hero.jpg";
+  }
+
+  return {
+    id: typeof rawAcc.id === "string" && rawAcc.id ? rawAcc.id.slice(0, 64) : `acc-${Date.now()}`,
+    name: typeof rawAcc.name === "string" ? rawAcc.name.trim().slice(0, 40) || pureHandle : pureHandle,
+    handle: cleanHandle,
+    url: sanitizeSafeUrl(rawAcc.url, defaultUrl),
+    avatar,
+    bio: typeof rawAcc.bio === "string" ? rawAcc.bio.trim().slice(0, 300) : "记录探索与思考",
+    location: typeof rawAcc.location === "string" ? rawAcc.location.trim().slice(0, 50) : "Online",
+    joinedDate: typeof rawAcc.joinedDate === "string" ? rawAcc.joinedDate.slice(0, 30) : "2026年",
+    followersCount: typeof rawAcc.followersCount === "number" ? Math.max(0, rawAcc.followersCount) : 100,
+    followingCount: typeof rawAcc.followingCount === "number" ? Math.max(0, rawAcc.followingCount) : 150,
+    tweetsCount: typeof rawAcc.tweetsCount === "number" ? Math.max(0, rawAcc.tweetsCount) : 0,
+    monthlyImpressions: typeof rawAcc.monthlyImpressions === "string" ? rawAcc.monthlyImpressions.slice(0, 20) : "1.2K",
+    engagementRate: typeof rawAcc.engagementRate === "string" ? rawAcc.engagementRate.slice(0, 10) : "5.0%",
+    authType: rawAcc.authType === "api" ? "api" : "real_linked",
+    targetNiche: niches,
+    toneStyle: typeof rawAcc.toneStyle === "string" ? rawAcc.toneStyle.slice(0, 100) : "真诚接地气",
+    apiKey: typeof rawAcc.apiKey === "string" ? rawAcc.apiKey.slice(0, 128) : "",
+    apiSecret: typeof rawAcc.apiSecret === "string" ? rawAcc.apiSecret.slice(0, 128) : "",
+    bearerToken: typeof rawAcc.bearerToken === "string" ? rawAcc.bearerToken.slice(0, 256) : "",
+  };
+}
+
 // 根据用户的定位与人设风格，动态生成匹配的热点雷达
 export function generateHotspotsForNiche(niches = [], accountName = "创作者") {
-  const primaryNiche = niches[0] || "一人创业";
-  const secondNiche = niches[1] || "前沿探索";
+  const safeNiches = Array.isArray(niches) && niches.length > 0 ? niches : ["一人创业", "前沿探索"];
+  const primaryNiche = String(safeNiches[0] || "一人创业").slice(0, 20);
+  const secondNiche = String(safeNiches[1] || "前沿探索").slice(0, 20);
 
   return [
     {
@@ -152,26 +230,28 @@ export function generateHotspotsForNiche(niches = [], accountName = "创作者")
 const STORAGE_KEY_ACCOUNTS = "fuyupulse_user_accounts";
 const STORAGE_KEY_CURRENT_ID = "fuyupulse_current_account_id";
 
-// 获取存储的账号列表
+// 获取存储的账号列表 (带防御性 Schema 校验)
 export function loadStoredAccounts() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_ACCOUNTS);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        return parsed.map(sanitizeAccount);
       }
     }
   } catch (e) {
-    console.error("Failed to load accounts from storage", e);
+    console.error("Failed to load accounts from storage, falling back to preset", e);
   }
-  return DEFAULT_PRESET_ACCOUNTS;
+  return DEFAULT_PRESET_ACCOUNTS.map(sanitizeAccount);
 }
 
 // 保存账号列表
 export function saveStoredAccounts(accounts) {
   try {
-    localStorage.setItem(STORAGE_KEY_ACCOUNTS, JSON.stringify(accounts));
+    if (!Array.isArray(accounts)) return;
+    const sanitized = accounts.map(sanitizeAccount);
+    localStorage.setItem(STORAGE_KEY_ACCOUNTS, JSON.stringify(sanitized));
   } catch (e) {
     console.error("Failed to save accounts to storage", e);
   }
@@ -179,10 +259,24 @@ export function saveStoredAccounts(accounts) {
 
 // 获取当前选中的账号 ID
 export function loadCurrentAccountId() {
-  return localStorage.getItem(STORAGE_KEY_CURRENT_ID) || DEFAULT_PRESET_ACCOUNTS[0].id;
+  try {
+    const id = localStorage.getItem(STORAGE_KEY_CURRENT_ID);
+    if (typeof id === "string" && id.trim()) {
+      return id.trim().slice(0, 64);
+    }
+  } catch (e) {
+    console.error("Failed to read current account id", e);
+  }
+  return DEFAULT_PRESET_ACCOUNTS[0].id;
 }
 
 // 保存当前选中的账号 ID
 export function saveCurrentAccountId(id) {
-  localStorage.setItem(STORAGE_KEY_CURRENT_ID, id);
+  try {
+    if (typeof id === "string" && id.trim()) {
+      localStorage.setItem(STORAGE_KEY_CURRENT_ID, id.trim().slice(0, 64));
+    }
+  } catch (e) {
+    console.error("Failed to save current account id", e);
+  }
 }

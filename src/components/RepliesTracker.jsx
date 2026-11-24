@@ -156,6 +156,7 @@ export default function RepliesTracker({ replies, onSendReply }) {
                 <div className="flex items-center space-x-2 pt-2">
                   <input
                     type="text"
+                    maxLength={280}
                     value={currentDraft}
                     onChange={(e) => setCustomDrafts({ ...customDrafts, [item.id]: e.target.value })}
                     placeholder="输入或点击上方 AI 建议快速拟定回复..."

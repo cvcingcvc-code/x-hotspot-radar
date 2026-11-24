@@ -89,10 +89,41 @@ export default function CopywritingStudio({
     }
   }, [selectedHotspot, styleMode]);
 
+  // 防御性剪贴板复制 (兼顾异步拒绝与非安全上下文降级)
+  const safeCopyText = async (text, onSuccess) => {
+    if (!text) return;
+    try {
+      if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        onSuccess();
+        return;
+      }
+    } catch (e) {
+      console.warn('Clipboard writeText failed, trying fallback', e);
+    }
+
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      onSuccess();
+    } catch (err) {
+      console.error('Copy fallback failed', err);
+    }
+  };
+
   const handleCopy = () => {
-    navigator.clipboard.writeText(tweetContent);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
+    safeCopyText(tweetContent, () => {
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    });
   };
 
   const handlePublish = (mode = 'web') => {
@@ -248,6 +279,7 @@ export default function CopywritingStudio({
             <textarea
               value={tweetContent}
               onChange={(e) => setTweetContent(e.target.value)}
+              maxLength={2000}
               rows={9}
               placeholder="在这里编写或让 AI 生成符合你定位的推文文案..."
               className="w-full p-4 rounded-2xl bg-white/70 border border-frost-200/80 text-sm text-frost-900 placeholder-frost-400 focus:outline-none focus:border-scarf-400 focus:bg-white transition leading-relaxed shadow-inner resize-none"
@@ -270,9 +302,10 @@ export default function CopywritingStudio({
                 <button
                   type="button"
                   onClick={() => {
-                    navigator.clipboard.writeText(selfReplyComment);
-                    setIsCommentCopied(true);
-                    setTimeout(() => setIsCommentCopied(false), 2000);
+                    safeCopyText(selfReplyComment, () => {
+                      setIsCommentCopied(true);
+                      setTimeout(() => setIsCommentCopied(false), 2000);
+                    });
                   }}
                   className="px-2.5 py-1 rounded-lg bg-white/80 hover:bg-white text-scarf-600 font-semibold border border-scarf-200 transition text-[11px] shadow-sm flex items-center gap-1"
                 >

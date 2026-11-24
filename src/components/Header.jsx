@@ -58,7 +58,7 @@ export default function Header({
           <a
             href={account.url || `https://x.com/${account.handle.replace('@', '')}`}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="flex items-center space-x-2 px-3 py-1.5 rounded-2xl glass-card text-xs font-medium text-frost-700 hover:border-scarf-300 transition"
             title="点击访问 X 个人主页"
           >

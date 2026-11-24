@@ -10,6 +10,7 @@ import {
   Target,
   MessageSquare
 } from 'lucide-react';
+import { sanitizeHandle, sanitizeSafeUrl, sanitizeAccount } from '../utils/accountEngine';
 
 const SUGGESTED_NICHES = [
   "AI 与一人创业",
@@ -66,19 +67,18 @@ export default function AccountWizardModal({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const cleanHandle = handle.trim().startsWith('@') 
-      ? handle.trim() 
-      : handle.includes('x.com/') 
-      ? `@${handle.split('x.com/')[1].split('/')[0].split('?')[0]}`
-      : `@${handle.trim() || 'my_creator'}`;
+    const cleanHandle = sanitizeHandle(handle);
+    const pureHandle = cleanHandle.replace(/^@/, '');
+    const cleanName = (name.trim() || pureHandle).slice(0, 40);
+    const safeAvatar = sanitizeSafeUrl(avatarUrl, '/assets/winter-anime-hero.jpg');
 
-    const newAccount = {
+    const rawAccount = {
       id: `acc-${Date.now()}`,
-      name: name.trim() || cleanHandle.replace('@', ''),
+      name: cleanName,
       handle: cleanHandle,
-      url: `https://x.com/${cleanHandle.replace('@', '')}`,
-      avatar: avatarUrl.trim() || '/assets/winter-anime-hero.jpg',
-      bio: bio.trim() || `记录在 ${selectedNiches.join('、')} 赛道的探索与思考`,
+      url: `https://x.com/${pureHandle}`,
+      avatar: safeAvatar,
+      bio: (bio.trim() || `记录在 ${selectedNiches.join('、')} 赛道的探索与思考`).slice(0, 200),
       location: 'Online',
       joinedDate: '刚刚加入',
       followersCount: 100,
@@ -91,7 +91,8 @@ export default function AccountWizardModal({
       toneStyle: selectedTone,
     };
 
-    onCreateAccount(newAccount);
+    const finalAccount = sanitizeAccount(rawAccount);
+    onCreateAccount(finalAccount);
     onClose();
   };
 
@@ -126,6 +127,7 @@ export default function AccountWizardModal({
               <input
                 type="text"
                 required
+                maxLength={40}
                 value={handle}
                 onChange={(e) => setHandle(e.target.value)}
                 placeholder="@your_handle 或 https://x.com/..."
@@ -136,6 +138,7 @@ export default function AccountWizardModal({
               <label className="block text-frost-700 font-semibold mb-1">展示昵称</label>
               <input
                 type="text"
+                maxLength={30}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="例如：阿杰、Emily"
@@ -177,6 +180,7 @@ export default function AccountWizardModal({
             <div className="flex items-center space-x-2 pt-1.5">
               <input
                 type="text"
+                maxLength={25}
                 value={customNicheInput}
                 onChange={(e) => setCustomNicheInput(e.target.value)}
                 placeholder="添加自定义赛道（如：跨境电商、摄影器材）"
@@ -228,6 +232,7 @@ export default function AccountWizardModal({
             </label>
             <input
               type="url"
+              maxLength={250}
               value={avatarUrl}
               onChange={(e) => setAvatarUrl(e.target.value)}
               placeholder="https://... 头像图片直链"
